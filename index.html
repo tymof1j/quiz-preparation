@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Дипломатичний тест</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .mode-selector {
+            margin-bottom: 30px;
+        }
+
+        .mode-btn {
+            display: inline-block;
+            padding: 12px 24px;
+            margin: 5px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.2s;
+        }
+
+        .mode-btn:hover {
+            background: #0056b3;
+        }
+
+        .sequential-controls {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            margin: 5px;
+        }
+
+        .start-from-input {
+            padding: 12px;
+            border: 2px solid #007bff;
+            border-radius: 6px;
+            font-size: 16px;
+            width: 120px;
+            text-align: center;
+        }
+
+        .start-from-input::placeholder {
+            color: #999;
+        }
+
+        .quiz-area {
+            display: none;
+        }
+
+        .quiz-area.active {
+            display: block;
+        }
+
+        .question-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #eee;
+        }
+
+        .question-number {
+            font-weight: 600;
+            color: #666;
+        }
+
+        .question-text {
+            font-size: 18px;
+            font-weight: 500;
+            margin-bottom: 25px;
+            color: #222;
+        }
+
+        .option {
+            padding: 15px;
+            margin: 10px 0;
+            background: #f8f9fa;
+            border: 2px solid #dee2e6;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .option:hover {
+            background: #e9ecef;
+            border-color: #adb5bd;
+        }
+
+        .option.selected {
+            background: #d1ecf1;
+            border-color: #0c5460;
+        }
+
+        .option.correct {
+            background: #d4edda;
+            border-color: #28a745;
+        }
+
+        .option.incorrect {
+            background: #f8d7da;
+            border-color: #dc3545;
+        }
+
+        .controls {
+            margin-top: 30px;
+            display: flex;
+            gap: 10px;
+            justify-content: space-between;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #218838;
+        }
+
+        .btn-primary:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #545b62;
+        }
+
+        .stats {
+            display: none;
+            text-align: center;
+        }
+
+        .stats.active {
+            display: block;
+        }
+
+        .stats h2 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+
+        .stat-card {
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #007bff;
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: #007bff;
+        }
+
+        .stat-label {
+            margin-top: 5px;
+            color: #666;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: #e9ecef;
+            border-radius: 4px;
+            margin: 20px 0;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: #28a745;
+            transition: width 0.3s;
+        }
+
+        .info-text {
+            color: #666;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🇺🇦 Дипломатичний тест</h1>
+
+        <div class="mode-selector" id="modeSelector">
+            <p style="margin-bottom: 15px; color: #666;">Оберіть режим:</p>
+            <button class="mode-btn" onclick="startQuiz('errors')">📕 Тільки помилки</button>
+            <button class="mode-btn" onclick="startQuiz('random')">🎲 Випадково (всі)</button>
+            
+            <div class="sequential-controls">
+                <button class="mode-btn" onclick="startSequentialQuiz()">📖 Послідовно</button>
+                <input 
+                    type="number" 
+                    id="startFromInput" 
+                    class="start-from-input" 
+                    placeholder="з питання №" 
+                    min="1" 
+                    max="349"
+                    onkeypress="if(event.key === 'Enter') startSequentialQuiz()"
+                >
+            </div>
+            <div class="info-text">💡 Залиште поле порожнім щоб почати з №1</div>
+            
+            <br><br>
+            <button class="mode-btn" onclick="startQuiz('reset')">🔄 Скинути прогрес</button>
+        </div>
+
+        <div class="quiz-area" id="quizArea">
+            <div class="question-header">
+                <span class="question-number" id="questionNumber"></span>
+                <span id="timer">00:00</span>
+            </div>
+
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+
+            <div class="question-text" id="questionText"></div>
+
+            <div id="optionsContainer"></div>
+
+            <div class="controls">
+                <button class="btn btn-secondary" onclick="finishQuiz()">⏹ Завершити</button>
+                <button class="btn btn-primary" id="nextBtn" onclick="nextQuestion()" disabled>Наступне →</button>
+            </div>
+        </div>
+
+        <div class="stats" id="statsArea">
+            <h2>📊 Результати</h2>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="statCorrect">0</div>
+                    <div class="stat-label">Правильно</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="statIncorrect">0</div>
+                    <div class="stat-label">Неправильно</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="statTime">0:00</div>
+                    <div class="stat-label">Час</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="statPercent">0%</div>
+                    <div class="stat-label">Точність</div>
+                </div>
+            </div>
+            <button class="mode-btn" onclick="location.reload()">🔙 Назад до меню</button>
+        </div>
+    </div>
+
+    <script src="quiz.js"></script>
+</body>
+</html>
