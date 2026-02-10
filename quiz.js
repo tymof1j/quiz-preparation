@@ -19,7 +19,11 @@ fetch('questions.json')
     .then(r => r.json())
     .then(data => {
         questions = data;
-        console.log(`Loaded ${questions.length} questions`);
+        console.log(`✓ Завантажено ${questions.length} питань`);
+    })
+    .catch(err => {
+        console.error('Помилка завантаження питань:', err);
+        alert('Не вдалося завантажити питання. Перезавантажте сторінку.');
     });
 
 // Get stored progress
@@ -47,7 +51,7 @@ function startSequentialQuiz() {
     if (isNaN(startFrom) || startFrom < 1) {
         startFrom = 1; // Default to question 1
     } else if (startFrom > questions.length) {
-        alert(`Питання №${startFrom} не існує! Всього питань: ${questions.length}`);
+        alert(`Питання №${startFrom} не існує!\nВсього питань: ${questions.length}`);
         return;
     }
     
@@ -57,9 +61,9 @@ function startSequentialQuiz() {
 // Start quiz with selected mode
 function startQuiz(mode, startFrom = 1) {
     if (mode === 'reset') {
-        if (confirm('Скинути весь прогрес? Це видалить історію правильних/неправильних відповідей.')) {
+        if (confirm('Скинути весь прогрес?\n\nЦе видалить історію всіх правильних і неправильних відповідей.')) {
             localStorage.removeItem(STORAGE_KEY);
-            alert('Прогрес скинуто!');
+            alert('✓ Прогрес успішно скинуто!');
         }
         return;
     }
@@ -74,7 +78,7 @@ function startQuiz(mode, startFrom = 1) {
             .filter(item => progress[item.index] === false); // Only incorrect answers
         
         if (currentQueue.length === 0) {
-            alert('Немає помилок! Всі питання відповіли правильно або ще не відповіли.');
+            alert('🎉 Немає помилок!\n\nВсі питання відповіли правильно або ще не розпочинали.');
             return;
         }
     } else if (mode === 'random') {
@@ -102,11 +106,18 @@ function startQuiz(mode, startFrom = 1) {
     };
 
     currentIndex = 0;
-    document.getElementById('modeSelector').style.display = 'none';
-    document.getElementById('quizArea').classList.add('active');
     
-    startTimer();
-    loadQuestion();
+    // Smooth transition
+    const modeSelector = document.getElementById('modeSelector');
+    const quizArea = document.getElementById('quizArea');
+    
+    modeSelector.style.animation = 'fadeOut 0.4s ease forwards';
+    setTimeout(() => {
+        modeSelector.style.display = 'none';
+        quizArea.classList.add('active');
+        startTimer();
+        loadQuestion();
+    }, 400);
 }
 
 // Timer
@@ -135,22 +146,27 @@ function loadQuestion() {
     // Update UI - show actual question number (not queue position)
     const actualQuestionNumber = item.index + 1; // Convert back to 1-based
     document.getElementById('questionNumber').textContent = 
-        `Питання ${actualQuestionNumber} (${currentIndex + 1} / ${currentQueue.length})`;
+        `Питання ${actualQuestionNumber} з ${questions.length}`;
     document.getElementById('questionText').textContent = item.question.question;
     
     // Progress bar
     const progress = ((currentIndex) / currentQueue.length) * 100;
     document.getElementById('progressFill').style.width = progress + '%';
 
-    // Render options
+    // Render options with staggered animation
     const container = document.getElementById('optionsContainer');
     container.innerHTML = '';
 
-    item.question.options.forEach(opt => {
+    item.question.options.forEach((opt, index) => {
         const div = document.createElement('div');
         div.className = 'option';
         div.textContent = `${opt.letter}) ${opt.text}`;
         div.onclick = () => selectAnswer(opt.letter, div);
+        
+        // Staggered fade-in animation
+        div.style.opacity = '0';
+        div.style.animation = `fadeInUp 0.5s ease ${index * 0.1}s forwards`;
+        
         container.appendChild(div);
     });
 
@@ -178,12 +194,12 @@ function selectAnswer(letter, element) {
     progress[currentQuestion.index] = isCorrect;
     saveProgress(progress);
 
-    // Show correct/incorrect
+    // Show correct/incorrect with animation
     const allOptions = document.querySelectorAll('.option');
     allOptions.forEach(opt => {
         const optLetter = opt.textContent.trim()[0];
         if (optLetter === correct) {
-            opt.classList.add('correct');
+            setTimeout(() => opt.classList.add('correct'), 100);
         } else if (optLetter === letter && !isCorrect) {
             opt.classList.add('incorrect');
         }
@@ -191,14 +207,24 @@ function selectAnswer(letter, element) {
         opt.onclick = null;
     });
 
-    // Enable next button
-    document.getElementById('nextBtn').disabled = false;
+    // Enable next button with slight delay
+    setTimeout(() => {
+        document.getElementById('nextBtn').disabled = false;
+    }, 300);
 }
 
 // Next question
 function nextQuestion() {
     currentIndex++;
-    loadQuestion();
+    
+    // Fade out current question
+    const quizArea = document.getElementById('quizArea');
+    quizArea.style.opacity = '0.5';
+    
+    setTimeout(() => {
+        quizArea.style.opacity = '1';
+        loadQuestion();
+    }, 200);
 }
 
 // Finish quiz
@@ -211,11 +237,54 @@ function finishQuiz() {
     const total = sessionStats.correct + sessionStats.incorrect;
     const percent = total > 0 ? Math.round((sessionStats.correct / total) * 100) : 0;
 
-    document.getElementById('quizArea').classList.remove('active');
-    document.getElementById('statsArea').classList.add('active');
-
-    document.getElementById('statCorrect').textContent = sessionStats.correct;
-    document.getElementById('statIncorrect').textContent = sessionStats.incorrect;
-    document.getElementById('statTime').textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
-    document.getElementById('statPercent').textContent = percent + '%';
+    // Smooth transition to stats
+    const quizArea = document.getElementById('quizArea');
+    const statsArea = document.getElementById('statsArea');
+    
+    quizArea.style.animation = 'fadeOut 0.4s ease forwards';
+    setTimeout(() => {
+        quizArea.classList.remove('active');
+        statsArea.classList.add('active');
+        
+        // Animate stats with stagger
+        document.getElementById('statCorrect').textContent = '0';
+        document.getElementById('statIncorrect').textContent = '0';
+        document.getElementById('statTime').textContent = '0:00';
+        document.getElementById('statPercent').textContent = '0%';
+        
+        // Count up animation
+        setTimeout(() => animateValue('statCorrect', 0, sessionStats.correct, 600), 100);
+        setTimeout(() => animateValue('statIncorrect', 0, sessionStats.incorrect, 600), 200);
+        setTimeout(() => {
+            document.getElementById('statTime').textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+        }, 300);
+        setTimeout(() => animateValue('statPercent', 0, percent, 600, '%'), 400);
+    }, 400);
 }
+
+// Animate number counting
+function animateValue(id, start, end, duration, suffix = '') {
+    const element = document.getElementById(id);
+    const range = end - start;
+    const increment = range / (duration / 16);
+    let current = start;
+    
+    const timer = setInterval(() => {
+        current += increment;
+        if ((increment > 0 && current >= end) || (increment < 0 && current <= end)) {
+            current = end;
+            clearInterval(timer);
+        }
+        element.textContent = Math.round(current) + suffix;
+    }, 16);
+}
+
+// Add fadeOut animation
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes fadeOut {
+        from { opacity: 1; }
+        to { opacity: 0; }
+    }
+`;
+document.head.appendChild(style);
